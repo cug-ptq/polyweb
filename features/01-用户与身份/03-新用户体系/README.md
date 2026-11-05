@@ -4,14 +4,15 @@
 
 ## 1. “新用户”如何产生
 
-Web 新用户不是前端本地生成的。登录成功后，polyai-server 以认证服务返回的真实 UID 为主键，调用 speakaccount 的 `detailorregister`：
+Web 新用户不是前端本地生成的。登录成功后，polyai-server 以认证服务返回的真实 UID 为主键，先通过 Krampus 读取用户资料；只有 Krampus 查询异常或返回无效 UID 时，才调用 speakaccount 的 `detailorregister` 完成创建或补全：
 
 ```text
 认证服务 Session
-→ Passport/Krampus 返回真实 UID
-→ speakaccount.GetUserDetailOrRegister
-→ registerSource=1(Web)
-→ 根据 IP、语言、时区创建或补全用户资料
+→ polyai-server 通过 Krampus getreallogin 解析真实 UID
+→ Krampus userdetailall 查询用户资料
+→ Krampus 用户缓存未命中时调用 speakaccount userbyidsdirect 回填基础资料缓存
+→ 若 Krampus 查询异常或返回 uid=0，polyai-server 调用 speakaccount detailorregister
+→ registerSource=1(Web)，必要时创建或补全用户资料
 → PolyWebUserInfo
 → isNew / 用户配置 / 会员 / 风险 / 对话
 ```
@@ -27,8 +28,17 @@ sequenceDiagram
     participant VIP as speakvip
     participant Risk as speakrisk
     FE->>PAS: GET /api/user/detail
-    PAS->>Account: GetUserDetailOrRegister(uid, registerSource=1)
-    Account-->>PAS: BaseUserInfo
+    PAS->>Krampus: getreallogin(session, appId)
+    Krampus-->>PAS: uid
+    PAS->>Krampus: userdetailall(uid)
+    alt Krampus资料缓存未命中
+        Krampus->>Account: userbyidsdirect([uid])
+        Account-->>Krampus: DB全量用户资料
+        Krampus-->>PAS: UserDetailAllRes
+    else Krampus异常或返回uid=0
+        PAS->>Account: detailorregister(uid, registerSource=1)
+        Account-->>PAS: 查询或创建后的用户资料
+    end
     PAS->>Location: IP识别当前国家
     PAS->>Risk: 计算WebDeviceLevel
     PAS->>VIP: GetVipInfo/DramaVips
@@ -48,7 +58,7 @@ sequenceDiagram
 | `localLanguage` | Referer 语言或请求头转换 | 初始化 `MotherTongue` |
 | `localTimezone` | `UserLocalTimezone` 请求头 | 用户时区和本地策略 |
 
-灰度开启时，`api_speakaccount.GetUserDetailOrRegister` 会优先通过 Krampus 用户灰度客户端查询；查询异常或数据无效时回落到 speakaccount 的 `detailorregister`。
+Krampus 的 `userdetailall` 由 `UserDetailAllGroup` 负责缓存。组内用户基础资料缓存未命中时，Krampus 调用 `/speakaccount/user/userbyidsdirect` 直查 speakaccount DB，并将结果回填到 `krampus:user:basic_v1:{uid}`。这条回源是“资料缓存冷数据自愈”；polyai-server 的 `detailorregister` 是另一层“接口异常/无效结果兜底”，后者才具备创建用户资料的语义。
 
 ## 4. PolyWebUserInfo 的形成
 
@@ -93,8 +103,10 @@ fake user 分支不会按真实用户完整注册流程处理，而是使用当�
 
 ```text
 认证成功
-→ UID已确定
-→ speakaccount detailorregister
+→ Krampus getreallogin解析UID
+→ Krampus userdetailall读取资料
+→ 缓存未命中时speakaccount userbyidsdirect直查并回填Krampus缓存
+→ Krampus异常/uid=0时speakaccount detailorregister
 → 用户资料创建/补全
 → CreateTime确定
 → IsNew计算
