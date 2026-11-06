@@ -1,5 +1,3 @@
-<div style="width:95vw; max-width:1400px; margin:0 auto; overflow-x:auto;">
-
 # 用户基础信息 Binlog 到 Krampus
 
 > 本文是《底层服务缓存机制》的补充，聚焦 `tblUser`、`tblUserExtInfo` 两张用户基础信息表，梳理数据库变更经过 `speakconsumer`、Kafka、RocketMQ，最终同步到 Krampus 的用户基础信息 Stored，并触发 Avalanche 接口缓存失效。
@@ -337,6 +335,3 @@ ListByIdsGroup.Del 结果
 | Krampus 用户 binlog 分流 | [krampus/internal/user/service.go](/Users/zyb/GolandProjects/krampus/internal/user/service.go) |
 | Krampus 用户基础信息写入 | [krampus/internal/user/service_userbasic.go](/Users/zyb/GolandProjects/krampus/internal/user/service_userbasic.go) |
 | Krampus 用户缓存 Key | [krampus/defines/stored.go](/Users/zyb/GolandProjects/krampus/defines/stored.go) |
-
-</div>
-
