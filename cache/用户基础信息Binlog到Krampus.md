@@ -7,7 +7,7 @@
 ```text
 用户数据库变更
     ↓
-Canal Binlog → Kafka（当前重点：4959_poly_user）
+Canal Binlog → Kafka（用户 binlog topic）
     ↓
 speakconsumer
     ├─ 清理自身 AccountStoredClient
@@ -23,7 +23,7 @@ speakconsumer
 ```mermaid
 flowchart LR
     DB["用户数据库<br/>tblUser / tblUserExtInfo"] --> CANAL["Canal Binlog"]
-    CANAL --> KAFKA["Kafka<br/>4959_poly_user"]
+    CANAL --> KAFKA["Kafka<br/>用户 binlog topic"]
     KAFKA --> SC["speakconsumer<br/>BinlogConsumerHandler"]
     SC --> EVICT["清理 speakconsumer<br/>AccountStoredClient"]
     SC --> NORMALIZE["构造 RmqDBTableBinlog"]
@@ -41,15 +41,7 @@ flowchart LR
 
 ### 2.1 Kafka 入口和表路由
 
-当前 OB Kafka 配置：
-
-```yaml
-kafkasub:
-  speakconsumer_ob:
-    topic:
-      - 4959_poly_user
-    group: speakconsumer_ob_group
-```
+`speakconsumer` 注册 OB Kafka 用户 binlog 消费者，并在消费后按数据库和表名路由到对应处理器。具体 topic、broker、group 等属于环境配置，不在本文展开。
 
 处理流程：
 
@@ -72,7 +64,7 @@ flowchart TD
 - 数据库路由：[ob_binlog.go:62](/Users/zyb/GolandProjects/speakconsumer/controllers/mq/kafka_consumer/ob_binlog.go:62)
 - 用户表路由：[ob_binlog.go:107](/Users/zyb/GolandProjects/speakconsumer/controllers/mq/kafka_consumer/ob_binlog.go:107)
 
-代码仍保留 MySQL 的 `BinlogConsumerHandler` 路径，但 `poly_account` 用户表 MySQL 事件已做退役处理，生产环境重点关注 `4959_poly_user` 的 OB 路径。
+代码仍保留 MySQL 的 `BinlogConsumerHandler` 路径，但当前 `poly_account` 用户表主要由 OB 消费路径处理。
 
 ### 2.2 speakconsumer 的两项工作
 
