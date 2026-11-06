@@ -4,7 +4,7 @@
 
 登录与注册围绕真实用户 `session → uid → 用户资料 → PolyWebUserInfo → 前端用户态` 展开，包含页面鉴权、邮箱注册/登录、OAuth 注册/登录、登录态恢复、登出和账号注销。
 
-这里需要区分四类职责：Passport 负责注册/登录认证提交；Krampus 负责登录成功后的 `session → uid` 解析和当前 Web 用户资料查询；speakaccount 的 `detailorregister` 负责用户资料创建或补全，并作为 Krampus 查询异常或历史兼容场景的回退；前端不生成 UID。
+这里需要区分四类职责：Passport 负责注册/登录认证提交；Krampus 负责登录成功后的 `session → uid` 解析(或者回源直查 uid)和当前 Web 用户资料查询；speakaccount 的 `detailorregister` 负责用户资料创建或补全，并作为 Krampus 查询异常或历史兼容场景的回退；前端不生成 UID。
 
 Web 用户接口 YApi：[用户详情 835296](https://yapi.yukework.com/project/10756/interface/api/835296)、[注销 902340](https://yapi.yukework.com/project/10756/interface/api/902340)、[登出兜底 1611479](https://yapi.yukework.com/project/10756/interface/api/1611479)。`/session/web/*` 认证接口当前无前端 YApi 定义。
 

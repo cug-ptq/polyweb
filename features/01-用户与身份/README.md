@@ -56,7 +56,7 @@ flowchart LR
 
 - [USER-001 登录与注册体系](./01-登录与注册体系/README.md)
 - [USER-002 游客与身份体系](./02-游客与身份体系/README.md)
-- [USER-003 新用户体系](./03-新用户体系/README.md)
+- [USER-003 新用户体系](03-新用户体系/README.md)
 - [USER-004 风险等级体系](./04-风险等级体系/README.md)
 - [USER-005 年龄验证体系](./05-年龄验证体系/README.md)
 
